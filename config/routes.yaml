@@ -1,0 +1,9 @@
+shorten_link:
+  methods: [GET, POST]
+  path: /api/v1/shorten
+  controller: App\Action\ShortenLinkAction
+
+redirect_link:
+  methods: [GET]
+  path: /{id}
+  controller: App\Action\RedirectLinkAction

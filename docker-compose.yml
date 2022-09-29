@@ -1,0 +1,119 @@
+version: '3'
+services:
+  eurosender_nginx:
+    container_name: eurosender_nginx
+    depends_on:
+      - eurosender_phpfpm
+    image: nginx:stable
+    labels:
+      - "traefik.backend=eurosender_nginx"
+      - "traefik.frontend.rule=Host:eurosender.dev.localhost"
+      - "traefik.docker.network=local-network"
+      - "traefik.port=80"
+      - "traefik.frontend.redirect.entryPoint=http"
+    networks:
+      local-network:
+        aliases:
+          - eurosender.dev.localhost
+    volumes:
+      - .:/var/www/html:cached
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    working_dir: /etc/nginx/conf.d
+
+  eurosender_phpfpm:
+    container_name: eurosender_phpfpm
+    build:
+      context: ./
+      dockerfile: ./docker/phpfpm/Dockerfile
+    networks:
+      - local-network
+    volumes:
+      - .:/var/www/html:cached
+    env_file:
+      - ./.env
+      - ./.env.prod
+    working_dir: /var/www/html
+
+  eurosender_reverse_proxy:
+    container_name: eurosender_reverse_proxy
+    image: traefik:v1.7
+    command: --api --docker
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - ./traefik.toml:/etc/traefik/traefik.toml
+      - ./certs/:/certs/
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - local-network
+
+  eurosender_mysql:
+    container_name: eurosender_mysql
+    image: mysql:5.6
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dev
+    ports:
+      - "3307:3306"
+    expose:
+      - '3306'
+    networks:
+      local-network:
+        aliases:
+          - mysql.dev.localhost
+    volumes:
+      - eurosender_mysql_volume:/var/lib/mysql
+
+  eurosender_elasticsearch:
+    container_name: eurosender_elasticsearch
+    environment:
+      - node.name=eurosender_elasticsearch
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.2
+    labels:
+      - "traefik.backend=eurosender_elasticsearch"
+      - "traefik.frontend.rule=Host:elasticsearch.dev.localhost"
+      - "traefik.docker.network=local-network"
+      - "traefik.port=9200"
+      - "traefik.frontend.redirect.entryPoint=http"
+    networks:
+      local-network:
+        aliases:
+          - elasticsearch.dev.localhost
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - eurosender_elasticsearch_volume:/usr/share/elasticsearch/data
+
+  eurosender_kibana:
+    container_name: eurosender_kibana
+    environment:
+      - "node.name=eurosender_kibana"
+      - "ELASTICSEARCH_HOSTS=http://eurosender_elasticsearch:9200"
+    image: docker.elastic.co/kibana/kibana:7.3.2
+    labels:
+      - "traefik.backend=eurosender_kibana"
+      - "traefik.frontend.rule=Host:kibana.dev.localhost"
+      - "traefik.docker.network=local-network"
+      - "traefik.port=5601"
+      - "traefik.frontend.redirect.entryPoint=http"
+    networks:
+      local-network:
+        aliases:
+          - kibana.dev.localhost
+volumes:
+  eurosender_elasticsearch_volume:
+    driver: local
+  eurosender_redis_volume:
+    driver: local
+  eurosender_mysql_volume:
+    driver: local
+networks:
+  local-network:
+    external: true

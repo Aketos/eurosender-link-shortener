@@ -1,0 +1,41 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            $applicationHost: '%env(resolve:APP_HOST)%'
+            $host: '%env(resolve:MYSQL_HOST)%'
+            $user: '%env(resolve:MYSQL_USER)%'
+            $password: '%env(resolve:MYSQL_PASSWORD)%'
+            $database: '%env(resolve:MYSQL_DATABASE)%'
+
+    App\:
+        resource: '../src/*'
+        exclude: '../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
+
+    App\Action\:
+        resource: '../src/Action'
+        tags: ['controller.service_arguments']
+
+    App\Repository\Connector\ConnectorInterface:
+        class: App\Repository\Connector\MysqlConnector
+
+    App\Factory\MysqlClientFactory:
+        arguments:
+            $host: '%env(resolve:MYSQL_HOST)%'
+            $user: '%env(resolve:MYSQL_USER)%'
+            $password: '%env(resolve:MYSQL_PASSWORD)%'
+            $database: '%env(resolve:MYSQL_DATABASE)%'
+
+    Simplon\Mysql\Mysql:
+        factory: ['@App\Factory\MysqlClientFactory', 'create']
+
+    Symfony\Component\Serializer\Normalizer\ObjectNormalizer: ~
+
+    App\Factory\ElasticsearchClientFactory:
+        arguments:
+            $host: '%env(resolve:ELASTICSEARCH_HOST)%'
+            $port: '%env(resolve:ELASTICSEARCH_PORT)%'
+
+    Elasticsearch\Client:
+        factory: [ '@App\Factory\ElasticsearchClientFactory', 'create' ]

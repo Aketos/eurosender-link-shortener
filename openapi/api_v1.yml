@@ -1,0 +1,51 @@
+openapi: 3.0.1
+
+info:
+    version: v1
+    title: Eurosender
+    description: Link Shortener for Eurosender BE Test assignment
+
+servers:
+    - url: http://eurosender.dev.localhost
+      description: Local via docker
+
+paths:
+    /api/v1/shorten:
+        get:
+            summary: Shorten a link
+            description: Generate a shortened link from a given one
+            operationId: ShortenLinkAction
+            parameters:
+                - in: query
+                  name: link
+                  required: true
+                  schema:
+                      type: string
+                  description: The link to shorten
+            responses:
+                200:
+                    description: Success, JSON response with the shortened URL
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+    /{id}:
+        get:
+            summary: Redirect to the original link
+            description: Get the original link from the shortened one generated and perform a redirection to it
+            operationId: RedirectLinkAction
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                  description: The shortened link ID
+            responses:
+                302:
+                    description: Success redirect response with the original link at the target URL.
+                    headers:
+                        Location:
+                            description: Target URL for redirection
+                            schema:
+                                type: string

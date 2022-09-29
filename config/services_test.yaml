@@ -1,0 +1,16 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  App\Repository\LinkRepository:
+    class: App\Repository\LinkRepository
+    public: true
+
+  App\Repository\TrackerRepository:
+    class: App\Repository\TrackerRepository
+    public: true
+
+  App\Repository\Connector\ElasticsearchConnector:
+    class: App\Repository\Connector\ElasticsearchConnector
+    public: true
